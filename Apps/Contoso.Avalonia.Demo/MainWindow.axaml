@@ -1,0 +1,93 @@
+﻿<Window x:Class="Contoso.Avalonia.Demo.MainWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="MainWindow" Width="335" SizeToContent="Height">
+    <StackPanel>
+        <TabControl SelectionChanged="TabControl_SelectionChanged">
+            <TabItem Header="App Center">
+                <StackPanel Margin="10" Spacing="4">
+                    <CheckBox Name="AppCenterEnabled" Content="App Center Enabled" Checked="AppCenterEnabled_Checked" Unchecked="AppCenterEnabled_Checked"/>
+                    <CheckBox Name="AppCenterAllowNetworkRequests" Content="Allow network requests" Checked="AppCenterAllowNetworkRequests_Checked" Unchecked="AppCenterAllowNetworkRequests_Checked"/>
+                    <Grid ColumnDefinitions="*,2*" RowDefinitions="Auto,Auto,Auto">
+                        <Label Content="User Id" Grid.Column="0" Grid.Row="0"/>
+                        <TextBox Name="UserId" Grid.Column="1" Grid.Row="0"  Margin="0, 2, 0, 2" KeyDown="UserId_KeyDown" LostFocus="UserId_LostFocus"/>
+                        <Label Content="Storage Max Size" Grid.Column="0" Grid.Row="1"/>
+                        <TextBox Name="StorageMaxSize" Grid.Column="1" Grid.Row="1"  Margin="0, 2, 0, 2"/>
+                        <Button Name="SaveStorageSize" Click="SaveStorageSize_Click" Content="Save Storage Size" Grid.ColumnSpan="2"
+                                Grid.Column="0" Grid.Row="2" Margin="0,5,0,0"/>
+                    </Grid>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Analytics">
+                <StackPanel Margin="10" Spacing="4">
+                    <CheckBox Name="AnalyticsEnabled" Content="Analytics Enabled" Checked="AnalyticsEnabled_Checked" Unchecked="AnalyticsEnabled_Checked"/>
+                    <StackPanel Orientation="Vertical" Spacing="4">
+                        <DockPanel LastChildFill="True">
+                            <Label Content="Event Name"/>
+                            <TextBox Name="EventName" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <DataGrid Name="EventProperties" AutoGenerateColumns="False" MinHeight="60" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Auto" SelectionMode="Single">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Property Key" Width="*" Binding="{Binding Key}"/>
+                                <DataGridTextColumn Header="Property Value" Width="*" Binding="{Binding Value}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <Button Name="TrackEvent" Content="Track event" Click="TrackEvent_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Crashes">
+                <StackPanel Margin="10" Spacing="4">
+                    <CheckBox Name="CrashesEnabled" Content="Crashes Enabled" Checked="CrashesEnabled_Checked" Unchecked="CrashesEnabled_Checked" />
+                    <CheckBox Name="HandleExceptions" Content="Handle Exceptions" />
+                    <DataGrid Name="ErrorProperties" AutoGenerateColumns="False" MinHeight="60" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Auto" SelectionMode="Single" Margin="0,10,0,10">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Property Key" Width="*" Binding="{Binding Key}"/>
+                            <DataGridTextColumn Header="Property Value" Width="*" Binding="{Binding Value}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Orientation="Vertical" Spacing="2">
+                        <DockPanel LastChildFill="True">
+                            <Label Content="Text attachment"/>
+                            <TextBox Name="TextAttachmentTextBox" PropertyChanged="TextAttachmentTextBox_OnPropertyChanged" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <DockPanel LastChildFill="True">
+                            <Label Content="File attachment"/>
+                            <Label Name="FileAttachmentLabel" Content="The file isn't selected" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <Button Content="Select file attachment" Click="FileErrorAttachment_Click"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical" Spacing="2">
+                        <Button Content="Call Crashes.GenerateTestCrash (debug only)" Click="CrashWithTestException_Click"/>
+                        <Button Content="Generate non serializable Exception" Click="CrashWithNonSerializableException_Click" />
+                        <Button Content="Divide by zero" Click="CrashWithDivisionByZero_Click" />
+                        <Button Content="Aggregate Exception" Click="CrashWithAggregateException_Click" />
+                        <Button Content="Crash with null reference" Click="CrashWithNullReference_Click"/>
+                        <Button Content="Async task crash" Click="CrashInsideAsyncTask_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Others">
+                <StackPanel Margin="10">
+                    <CheckBox Name="CountryCodeEnableCheckbox" Content="Country Code Enabled" Margin="0,10,0,10" Checked="CountryCodeEnabled_Checked" Unchecked="CountryCodeEnabled_Checked"/>
+                    <StackPanel IsEnabled="False" Name="CountryCodePanel">
+                        <DockPanel LastChildFill="True">
+                            <Label Name="CountryCodeLabel">Country code</Label>
+                            <TextBox Name="CountryCodeText"  VerticalAlignment="Center"></TextBox>
+                        </DockPanel>
+                        <Button Name="SaveCountryCodeButton" Click="CountryCodeSave_ClickListener">Save</Button>
+                        <TextBlock IsVisible="False" Foreground="Red" Name="CountryCodeNotice" TextWrapping="Wrap">Country code has been updated. This value will only be applied to the following sessions.</TextBlock>
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical">
+                        <CheckBox Name="EnableManualSessionTrackerCheckBox" Content="Enable Manual Session Tracker" Unchecked="EnableManualSessionTracker_Unchecked" Checked="EnableManualSessionTracker_Checked"/>
+                        <Button x:Name="StartSessionButton" Content="Start session" Click="StartSessionButtonClick"/>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+
+        </TabControl>
+    </StackPanel>
+</Window>

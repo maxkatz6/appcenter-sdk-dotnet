@@ -81,7 +81,7 @@ namespace Microsoft.AppCenter.Utils
         {
             get
             {
-                return ProductVersion ?? _defaultVersion;
+                return _defaultVersion;
             }
         }
 
