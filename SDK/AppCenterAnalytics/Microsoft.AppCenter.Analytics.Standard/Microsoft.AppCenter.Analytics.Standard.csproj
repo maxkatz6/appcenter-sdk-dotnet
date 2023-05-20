@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net472;net6.0</TargetFrameworks>
+    <PackageId>AppCenter.Analytics.Standard</PackageId>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Microsoft.AppCenter.Analytics.Shared\**\*.cs" />
