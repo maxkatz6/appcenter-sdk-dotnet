@@ -6,23 +6,15 @@ namespace Microsoft.AppCenter.Utils;
 
 public partial class DeviceInformationHelper
 {
-    private static readonly IntPtr allocSel = GetHandle("alloc");
-    private static readonly IntPtr initWithCharactersSel = GetHandle("initWithCharacters:length:");
-    private static readonly IntPtr selUTF8StringHandle = GetHandle("UTF8String");
-    private static readonly IntPtr modelStr = GetNSString("model");
-    private const string IOKitLibrary = "/System/Library/Frameworks/IOKit.framework/IOKit";
-    private const string libobjc = "/usr/lib/libobjc.dylib";
-    private const string IOPlatformExpertDeviceClassName = "IOPlatformExpertDevice";
-
     private static string? GetAppleDeviceModel()
     {
-        var strPtr = GetPlatformExpertPropertyValue(modelStr);
+        var strPtr = AppleNativeMethods.GetPlatformExpertPropertyValue(AppleNativeMethods.modelStr);
         if (strPtr == IntPtr.Zero)
         {
             return null;
         }
         // ideally we should release strPtr string, but it's used once anyway.
-        return Marshal.PtrToStringAuto(intptr_objc_msgSend(strPtr, selUTF8StringHandle));
+        return Marshal.PtrToStringAuto(AppleNativeMethods.CFDataGetBytePtr(strPtr));
     }
     
     private static string? GetAppleDeviceOemName()
@@ -30,53 +22,84 @@ public partial class DeviceInformationHelper
         return "Apple";
     }
 
-    private static unsafe IntPtr GetNSString(string str)
+    private static class AppleNativeMethods
     {
-        fixed (char* ptrFirstChar = str)
+        internal static readonly IntPtr allocSel = GetHandle("alloc");
+        internal static readonly IntPtr classSel = GetHandle("class");
+        internal static readonly IntPtr nsStringClass = objc_getClass("NSString");
+        internal static readonly IntPtr initWithCharactersSel = GetHandle("initWithCharacters:length:");
+        internal static readonly IntPtr selUTF8StringHandle = GetHandle("UTF8String");
+        internal static readonly IntPtr modelStr = GetNSString("model");
+        internal const string IOKitLibrary = "/System/Library/Frameworks/IOKit.framework/IOKit";
+        internal const string libobjc = "/usr/lib/libobjc.dylib";
+
+        internal const string coreFoundationLibrary =
+            "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
+
+        internal const string IOPlatformExpertDeviceClassName = "IOPlatformExpertDevice";
+
+        internal static unsafe IntPtr GetNSString(string str)
         {
-            var allocated = intptr_objc_msgSend(default, allocSel);
-            return IntPtr_objc_msgSend_IntPtr_IntPtr(allocated, initWithCharactersSel, (IntPtr)ptrFirstChar, (IntPtr)str.Length);
+            fixed (char* ptrFirstChar = str)
+            {
+                var allocated = intptr_objc_msgSend(nsStringClass, allocSel);
+                return IntPtr_objc_msgSend_IntPtr_IntPtr(allocated, initWithCharactersSel, (IntPtr)ptrFirstChar,
+                    (IntPtr)str.Length);
+            }
         }
+
+        internal static IntPtr GetPlatformExpertPropertyValue(IntPtr property)
+        {
+            uint platformExpertRef = 0;
+            try
+            {
+                platformExpertRef = IOServiceGetMatchingService(0, IOServiceMatching(IOPlatformExpertDeviceClassName));
+                if (platformExpertRef == 0)
+                    return default;
+
+                var propertyRef = IORegistryEntryCreateCFProperty(platformExpertRef, property, IntPtr.Zero, 0);
+                if (propertyRef == IntPtr.Zero)
+                    return default;
+
+                return propertyRef;
+            }
+            finally
+            {
+                if (platformExpertRef != 0)
+                    IOObjectRelease(platformExpertRef);
+            }
+        }
+
+        [DllImport(IOKitLibrary)]
+        internal static extern uint IOServiceGetMatchingService(uint masterPort, IntPtr matching);
+
+        [DllImport(IOKitLibrary)]
+        internal static extern IntPtr IOServiceMatching(string s);
+
+        [DllImport(IOKitLibrary)]
+        internal static extern IntPtr IORegistryEntryCreateCFProperty(uint entry, IntPtr key, IntPtr allocator,
+            uint options);
+
+        [DllImport(IOKitLibrary)]
+        internal static extern int IOObjectRelease(uint o);
+
+        [DllImport(coreFoundationLibrary)]
+        internal static extern IntPtr CFDataGetBytePtr(IntPtr ptr);
+
+        [DllImport(libobjc, EntryPoint = "objc_msgSend")]
+        internal static extern IntPtr intptr_objc_msgSend(IntPtr basePtr, IntPtr selector);
+
+        [DllImport(libobjc, EntryPoint = "objc_msgSend")]
+        internal static extern IntPtr IntPtr_objc_msgSend_IntPtr_IntPtr(IntPtr receiver, IntPtr selector, IntPtr p1,
+            IntPtr p2);
+
+        [DllImport(libobjc)]
+        internal static extern IntPtr objc_getClass(string className);
+
+        [DllImport(libobjc)]
+        internal static extern IntPtr sel_getUid(string selector);
+
+        [DllImport(libobjc, EntryPoint = "sel_registerName")]
+        internal extern static IntPtr GetHandle(string name);
     }
-
-    private static IntPtr GetPlatformExpertPropertyValue(IntPtr property)
-    {
-        uint platformExpertRef = 0;
-        try
-        {
-            platformExpertRef = IOServiceGetMatchingService(0, IOServiceMatching(IOPlatformExpertDeviceClassName));
-            if (platformExpertRef == 0)
-                return default;
-
-            var propertyRef = IORegistryEntryCreateCFProperty(platformExpertRef, property, IntPtr.Zero, 0);
-            if (propertyRef == IntPtr.Zero)
-                return default;
-
-            return propertyRef;
-        }
-        finally
-        {
-            if (platformExpertRef != 0)
-                IOObjectRelease(platformExpertRef);
-        }
-    }
-
-    [DllImport(IOKitLibrary)]
-    private static extern uint IOServiceGetMatchingService(uint masterPort, IntPtr matching);
-    [DllImport(IOKitLibrary)]
-    private static extern IntPtr IOServiceMatching(string s);
-    [DllImport(IOKitLibrary)]
-    private static extern IntPtr IORegistryEntryCreateCFProperty(uint entry, IntPtr key, IntPtr allocator, uint options);
-    [DllImport(IOKitLibrary)]
-    private static extern int IOObjectRelease(uint o);
-    [DllImport(libobjc, EntryPoint = "objc_msgSend")]
-    private static extern IntPtr intptr_objc_msgSend(IntPtr basePtr, IntPtr selector);
-    [DllImport(libobjc, EntryPoint = "objc_msgSend")]
-    public extern static IntPtr IntPtr_objc_msgSend_IntPtr_IntPtr(IntPtr receiver, IntPtr selector, IntPtr p1, IntPtr p2);
-    [DllImport(libobjc)]
-    private static extern IntPtr objc_getClass(string className);
-    [DllImport(libobjc)]
-    private static extern IntPtr sel_getUid(string selector);
-    [DllImport(libobjc, EntryPoint = "sel_registerName")]
-    private extern static IntPtr GetHandle(string name);
 }

@@ -54,7 +54,7 @@ namespace Microsoft.AppCenter.Utils
                 }
                 else if (OperatingSystemEx.IsMacOS() || OperatingSystemEx.IsIOS())
                 {
-                    return GetAppleDeviceModel();
+                    return GetAppleDeviceOemName();
                 }
             }
             catch (Exception exception)
