@@ -8,14 +8,9 @@ namespace Microsoft.AppCenter
 {
     public abstract class ApplicationLifecycleHelper : IApplicationLifecycleHelper
     {
-        private static IApplicationLifecycleHelper _instance = null;
-
         // Considered to be suspended until can verify that the application has started.
         protected static bool _suspended = true;
-
-        // True if InvokeResuming has been called at least once during the current process.
-        protected static bool _started = false;
-
+        
         /// <summary>
         /// Indicates whether the application is currently in a suspended state. 
         /// </summary>
@@ -25,61 +20,25 @@ namespace Microsoft.AppCenter
         public event EventHandler ApplicationResuming;
         public event EventHandler<UnhandledExceptionOccurredEventArgs> UnhandledExceptionOccurred;
 
-        public static IApplicationLifecycleHelper Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-#if WINDOWS10_0_17763_0_OR_GREATER
-                    if (WindowsHelper.IsRunningAsWinUI)
-                    {
-                        AppCenterLog.Debug(AppCenterLog.LogTag, "Use lifecycle for WinUI applications.");
-                        _instance = new ApplicationLifecycleHelperWinUI();
-                    }
-                    else
-#endif
-                    {
-                        AppCenterLog.Debug(AppCenterLog.LogTag, "Use lifecycle for desktop applications.");
-                        _instance = new ApplicationLifecycleHelperDesktop();
-                    }
-                }
-                return _instance;
-            }
+        public static IApplicationLifecycleHelper Instance { get; internal set; } =
+            new ApplicationLifecycleHelperDesktop();
 
-            // Setter for using in tests.
-            internal set { _instance = value; }
-        }
-
-        protected static void InvokeResuming()
+        protected void InvokeResuming()
         {
-            _started = true;
             if (_suspended)
             {
                 _suspended = false;
-                var instance = _instance as ApplicationLifecycleHelper;
-                instance?._InvokeResuming();
+                ApplicationResuming?.Invoke(this, EventArgs.Empty);
             }
         }
 
-        private void _InvokeResuming()
-        {
-            ApplicationResuming?.Invoke(this, EventArgs.Empty);
-        }
-
-        protected static void InvokeSuspended()
+        protected void InvokeSuspended()
         {
             if (!_suspended)
             {
                 _suspended = true;
-                var instance = _instance as ApplicationLifecycleHelper;
-                instance?._InvokeSuspended();
+                ApplicationSuspended?.Invoke(this, EventArgs.Empty);
             }
-        }
-
-        private void _InvokeSuspended()
-        {
-            ApplicationSuspended?.Invoke(this, EventArgs.Empty);
         }
 
         protected void InvokeUnhandledExceptionOccurred(object sender, UnhandledExceptionOccurredEventArgs args)
