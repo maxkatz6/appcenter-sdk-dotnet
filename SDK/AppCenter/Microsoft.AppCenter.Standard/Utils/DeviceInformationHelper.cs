@@ -4,15 +4,13 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace Microsoft.AppCenter.Utils
 {
-
     /// <summary>
     /// Implements the abstract device information helper class
     /// </summary>
-    public class DeviceInformationHelper : AbstractDeviceInformationHelper
+    public partial class DeviceInformationHelper : AbstractDeviceInformationHelper
     {
         private const string _defaultVersion = "Unknown";
 
@@ -27,29 +25,56 @@ namespace Microsoft.AppCenter.Utils
 
         protected override string GetDeviceModel()
         {
+            try
+            {
+                if (OperatingSystemEx.IsWindows())
+                {
+                    return GetWindowsDeviceModel();
+                }
+                else if (OperatingSystemEx.IsMacOS() || OperatingSystemEx.IsIOS())
+                {
+                    return GetAppleDeviceModel();
+                }
+            }
+            catch (Exception exception)
+            {
+                AppCenterLog.Warn(AppCenterLog.LogTag, "Failed to get device model.", exception);
+                return string.Empty;
+            }
             return string.Empty;
-        }
-
-        protected override string GetAppNamespace()
-        {
-            return Assembly.GetEntryAssembly()?.EntryPoint.DeclaringType?.Namespace;
         }
 
         protected override string GetDeviceOemName()
         {
+            try
+            {
+                if (OperatingSystemEx.IsWindows())
+                {
+                    return GetWindowsDeviceOemName();
+                }
+                else if (OperatingSystemEx.IsMacOS() || OperatingSystemEx.IsIOS())
+                {
+                    return GetAppleDeviceModel();
+                }
+            }
+            catch (Exception exception)
+            {
+                AppCenterLog.Warn(AppCenterLog.LogTag, "Failed to get device OEM name.", exception);
+                return string.Empty;
+            }
             return string.Empty;
         }
 
         protected override string GetOsName()
         {
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "WINDOWS"
-                    : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "MACOS"
-                        : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "LINUX"
-                        : RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID")) ? "ANDROID"
-                        : RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) ? "IOS"
-                        : RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")) ? "BROWSER"
-                        : RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST")) ? "MACCATALYST"
-                        : string.Empty;
+            return OperatingSystemEx.IsWindows() ? "WINDOWS"
+                : OperatingSystemEx.IsMacOS() ? "MACOS"
+                : OperatingSystemEx.IsLinux() ? "LINUX"
+                : OperatingSystemEx.IsAndroid() ? "ANDROID"
+                : OperatingSystemEx.IsIOS() ? "IOS"
+                : OperatingSystemEx.IsBrowser() ? "BROWSER"
+                : OperatingSystemEx.IsOSPlatform("MACCATALYST") ? "MACCATALYST"
+                : string.Empty;
         }
 
         protected override string GetOsBuild()
@@ -64,24 +89,45 @@ namespace Microsoft.AppCenter.Utils
 
         protected override string GetAppVersion()
         {
-            return ProductVersion ?? _defaultVersion;
+            return DeploymentVersion ?? ProductVersion ?? _defaultVersion;
         }
 
         protected override string GetAppBuild()
         {
-            return AssemblyVersion?.FileVersion ?? _defaultVersion;
-        }
-
-        protected override string GetScreenSize()
-        {
-            return string.Empty;
+            return DeploymentVersion ?? AssemblyVersion?.FileVersion ?? _defaultVersion;
         }
 
         private static string ProductVersion
         {
             get
             {
-                return _defaultVersion;
+                var assemblyVersion = AssemblyVersion;
+                return assemblyVersion?.ProductVersion ?? assemblyVersion?.FileVersion;
+            }
+        }
+
+        private static string _deploymentVersion;
+        private static string DeploymentVersion
+        {
+            get
+            {
+                try
+                {
+                    if (_deploymentVersion is not null)
+                    {
+                        return _deploymentVersion;
+                    }
+                    if (OperatingSystemEx.IsWindows() && Environment.OSVersion.Version.Major >= 10)
+                    {
+                        return _deploymentVersion = GetWindowsDeploymentVersion();
+                    }
+                }
+                catch (InvalidOperationException exception)
+                {
+                    AppCenterLog.Warn(AppCenterLog.LogTag, "Failed to get DeploymentVersion.", exception);
+                }
+
+                return null;
             }
         }
 

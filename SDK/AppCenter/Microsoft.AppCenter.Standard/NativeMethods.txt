@@ -1,0 +1,2 @@
+﻿GetCurrentPackageInfo
+PACKAGE_INFO

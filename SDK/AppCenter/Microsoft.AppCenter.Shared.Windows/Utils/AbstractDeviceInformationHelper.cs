@@ -83,7 +83,10 @@ namespace Microsoft.AppCenter.Utils
 
         protected abstract string GetAppBuild();
 
-        protected abstract string GetScreenSize();
+        protected virtual string GetScreenSize()
+        {
+            return null;
+        }
 
         protected virtual string GetCarrierName()
         {
